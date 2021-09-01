@@ -19,10 +19,12 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
 
 /* USER CODE END Includes */
 
@@ -43,11 +45,19 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+uint8_t buf = 'T';
+uint8_t buff[10]="Takeout!\n\r";
+char str[30];
+int temp,hum;
+char number[3];
+int num = 0;
+uint8_t rx_data;
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -85,10 +95,14 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_USART3_UART_Init();
+
+  /* Initialize interrupts */
+  MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
-	
-  HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_3);
-	HAL_Delay(50000);
+	temp=0;
+	hum=0;
+	HAL_UART_Receive_IT(&huart3, &rx_data,1);
 
   /* USER CODE END 2 */
 
@@ -96,9 +110,17 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+		//sprintf(str,"temperature: %d\t humidity: %d\r\n",temp,hum);
+		//HAL_UART_Transmit(&huart3,(uint8_t*)str,30,10);
+		//HAL_Delay(1000);
+		
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+		//temp++;
+		//hum+=2;
+		//if(temp>50) temp=0;
+		//if(hum>100) hum=0;
   }
   /* USER CODE END 3 */
 }
@@ -141,8 +163,30 @@ void SystemClock_Config(void)
   }
 }
 
-/* USER CODE BEGIN 4 */
+/**
+  * @brief NVIC Configuration.
+  * @retval None
+  */
+static void MX_NVIC_Init(void)
+{
+  /* USART3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(USART3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(USART3_IRQn);
+}
 
+/* USER CODE BEGIN 4 */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+ if(huart->Instance == USART3)
+ {
+	 if(rx_data=='t')
+	 {
+	   sprintf(number, "%d", num++);
+	   HAL_UART_Transmit(&huart3,(uint8_t *)number,3,10);
+   }
+	 HAL_UART_Receive_IT(&huart3, &rx_data,1);
+ }
+}
 /* USER CODE END 4 */
 
 /**
